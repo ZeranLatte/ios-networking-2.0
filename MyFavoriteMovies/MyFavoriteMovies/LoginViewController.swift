@@ -170,6 +170,7 @@ class LoginViewController: UIViewController {
             /* 6. Use the data! */
             self.appDelegate.requestToken = requestToken
             self.loginWithToken(self.appDelegate.requestToken!)
+            print("Successfully get token: \(requestToken)")
         }
         
         /* 7. Start the request */
@@ -253,6 +254,7 @@ class LoginViewController: UIViewController {
             
             /* 6. Use the data! */
             self.getSessionID(self.appDelegate.requestToken!)
+            print("Successfully login")
         }
         
         /* 7. Start the request */
@@ -335,6 +337,7 @@ class LoginViewController: UIViewController {
             /* 6. Use the data! */
             self.appDelegate.sessionID = sessionID
             self.getUserID(self.appDelegate.sessionID!)
+            print("Successfully get sessionID: \(sessionID)")
         }
         
         /* 7. Start the request */
@@ -342,18 +345,83 @@ class LoginViewController: UIViewController {
     }
     
     func getUserID(session_id : String) {
-        
-        print("getUserID: implement me!")
-        
         /* TASK: Get the user's ID, then store it (appDelegate.userID) for future use and go to next view! */
         /* 1. Set the parameters */
+        let methodParameters = [
+        "api_key": appDelegate.apiKey,
+        "session_id": session_id
+        ]
+        
         /* 2. Build the URL */
+        let urlString = appDelegate.baseURLSecureString + "account" + appDelegate.escapedParameters(methodParameters)
+        let url = NSURL(string: urlString)!
+        
         /* 3. Configure the request */
+        let request = NSMutableURLRequest(URL: url)
+        request.addValue("application/json", forHTTPHeaderField: "Accept")
+        
         /* 4. Make the request */
-        /* 5. Parse the data */
-        /* 6. Use the data! */
+        let get_userID_task = session.dataTaskWithRequest(request) { (data, response, error) in
+            
+            /* GUARD: Was there an error? */
+            guard (error == nil) else {
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.debugTextLabel.text = "Failed to get basic account information."
+                }
+                print("There was an error with your request: \(error)")
+                return
+            }
+            
+            /* GUARD: Did we get a successful 2XX response? */
+            guard let statusCode = (response as? NSHTTPURLResponse)?.statusCode where statusCode >= 200 && statusCode <= 299 else {
+                if let response = response as? NSHTTPURLResponse {
+                    print("Your request returned an invalid response! Status code: \(response.statusCode)!")
+                } else if let response = response {
+                    print("Your request returned an invalid response! Response: \(response)!")
+                } else {
+                    print("Your request returned an invalid response!")
+                }
+                return
+            }
+            
+            /* GUARD: Was there any data returned? */
+            guard let data = data else {
+                print("No data was returned by the request!")
+                return
+            }
+        
+            /* 5. Parse the data */
+            let parsedResult: AnyObject!
+            do {
+                parsedResult = try NSJSONSerialization.JSONObjectWithData(data, options: .AllowFragments)
+            } catch {
+                parsedResult = nil
+                print("Could not parse the data as JSON: '\(data)'")
+                return
+            }
+            
+            /* GUARD: Did TheMovieDB return an error? */
+            guard (parsedResult.objectForKey("status_code") == nil) else {
+                print("TheMovieDB returned an error. See the status_code and status_message in \(parsedResult)")
+                return
+            }
+            
+            /* GUARD: Is the "id" key in parsedResult? */
+            guard let userID = parsedResult["id"] as? Int else {
+                dispatch_async(dispatch_get_main_queue()) {
+                    self.debugTextLabel.text = "Fail to get user id."
+                }
+                print("Cannot find key 'id' in \(parsedResult)")
+                return
+            }
+            /* 6. Use the data! */
+            self.appDelegate.userID = userID
+            print("Successfully set user id")
+        }
         /* 7. Start the request */
+        get_userID_task.resume()
     }
+    
 }
 
 // MARK: - LoginViewController (Configure UI)
