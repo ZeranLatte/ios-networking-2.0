@@ -42,6 +42,9 @@ class LoginViewController: UIViewController {
     @IBAction func loginButtonTouch(sender: AnyObject) {
         TMDBClient.sharedInstance().authenticateWithViewController(self) { (success, errorString) in
             if success {
+                print(success)
+                print("Authenticate done, calling completeLogin")
+
                 self.completeLogin()
             } else {
                 self.displayError(errorString)

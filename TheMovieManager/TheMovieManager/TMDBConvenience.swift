@@ -30,6 +30,7 @@ extension TMDBClient {
             
             if success {
                 print("requestToken: \(requestToken)")
+                completionHandler(success: true, errorString: nil)
             } else {
                 completionHandler(success: success, errorString: errorString)
             }
@@ -41,6 +42,24 @@ extension TMDBClient {
         /* 1. Specify parameters, method (if has {key}), and HTTP body (if POST) */
         /* 2. Make the request */
         /* 3. Send the desired value(s) to completion handler */
+        let parameters = [String:AnyObject]()
+        
+        taskForGETMethod(Methods.AuthenticationTokenNew, parameters: parameters) {(result, error) in
+            if let error = error {
+                print(error)
+                completionHandler(success: false, requestToken: nil, errorString: "Login Failed(Request token)")
+            } else {
+                if let token = result.valueForKey(JSONResponseKeys.RequestToken) as? String {
+                    print("We got the token")
+                    completionHandler(success: true, requestToken: token, errorString: nil)
+                } else {
+                    print("Could not find \(JSONResponseKeys.RequestToken) in \(result)")
+                    completionHandler(success: false, requestToken: nil, errorString: "Login Failed(Request token)")
+                }
+            }
+            
+        }
+        
         print("implement me: TMDBClient getRequestToken")
     }
     
